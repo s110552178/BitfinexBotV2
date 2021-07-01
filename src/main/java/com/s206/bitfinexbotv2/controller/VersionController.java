@@ -20,20 +20,11 @@ import java.util.Map;
 
 @RestController
 public class VersionController {
-	@Autowired
-	private BitfinexScheduler scheduler;
-	@Autowired
-	private MarginFundingService marginFundingService;
 
 
 	@RequestMapping(value = "version", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> version() throws Exception {
-//		marginFundingService.getFundingOrderHistory("fUSD", "Mrm1fFpFLomKiEUhlVBjFb8MxYA7tW4GqsSpN9dnC9O", "4frW0My2BmluzwcVnuXzyfZA1RB3rzvtOgpu4gVHZdw");
-		marginFundingService.submitFundingOrder("fUSD", "TZOPojRaLHlFUrTUtiRzNgGEwVz3rUu1bU7a5jRjWnB", "Ame9RRhkqGSlqHMcXm1JNpQZpvKlLGUGNeUMbtP3Bxg",
-				new BigDecimal(50), new BigDecimal(2), 30);
-		List<BitfinexActiveOrderDto> result = marginFundingService.getActiveWaitingOrder("fUSD", "Mrm1fFpFLomKiEUhlVBjFb8MxYA7tW4GqsSpN9dnC9O", "4frW0My2BmluzwcVnuXzyfZA1RB3rzvtOgpu4gVHZdw");
 
-		//		scheduler.check();
 		return new ResponseEntity<>("1.0.0", HttpStatus.OK);
 	}
 

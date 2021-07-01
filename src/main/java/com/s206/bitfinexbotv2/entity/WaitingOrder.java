@@ -10,7 +10,7 @@ public class WaitingOrder {
 	@Column(name = "id")
 	private long id;
 
-	@Column(name = "orderId")
+	@Column(name = "order_id")
 	private Long orderId;
 	@Column(name = "order_create_time")
 	private Long order_create_time;

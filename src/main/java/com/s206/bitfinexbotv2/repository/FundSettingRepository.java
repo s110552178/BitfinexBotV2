@@ -7,6 +7,6 @@ import java.util.Optional;
 
 public interface FundSettingRepository extends CrudRepository<FundSetting, Long> {
 
+	Optional<FundSetting> findByCurrencyAndStatus(String currency, boolean status);
 	Optional<FundSetting> findByCurrency(String currency);
-
 }
