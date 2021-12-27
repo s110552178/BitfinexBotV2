@@ -5,6 +5,7 @@ import com.s206.bitfinexbotv2.dto.BitfinexActiveOrderDto;
 import com.s206.bitfinexbotv2.dto.BitfinexWalletDto;
 import com.s206.bitfinexbotv2.scheduler.BitfinexScheduler;
 import com.s206.bitfinexbotv2.service.AmountService;
+import com.s206.bitfinexbotv2.service.CalculateService;
 import com.s206.bitfinexbotv2.service.MarginFundingService;
 import com.s206.bitfinexbotv2.util.ConnectionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,8 @@ import java.util.Map;
 @RestController
 public class VersionController {
 
+	@Autowired
+	private CalculateService calculateService;
 
 	@RequestMapping(value = "version", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> version() throws Exception {

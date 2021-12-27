@@ -3,6 +3,7 @@ package com.s206.bitfinexbotv2.service;
 import com.s206.bitfinexbotv2.util.ConnectionUtil;
 import com.s206.bitfinexbotv2.util.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +15,9 @@ public class BitfinexCoreService {
 	@Autowired
 	private SecurityUtil securityUtil;
 
-	private final static String domain = "https://api.bitfinex.com/";
+	@Value("${properties.bitfinex.domain}")
+	private String domain;
+
 
 	public Map<String, String> sendAuthEndPointRequest(String apiPath, String apiKey, String apiSecret, String requestBody){
 

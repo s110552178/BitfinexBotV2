@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.s206.bitfinexbotv2.dto.BitfinexActiveOrderDto;
 import com.s206.bitfinexbotv2.util.ConnectionUtil;
 import com.s206.bitfinexbotv2.util.SecurityUtil;
+import com.s206.bitfinexbotv2.util.TelegramNotificationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,9 @@ import java.util.Map;
 
 @Service
 public class MarginFundingService {
+
+	@Autowired
+	private TelegramNotificationUtil telegramNotificationUtil;
 
 	@Value("${properties.bitfinex.domain}")
 	private String domain;
@@ -88,14 +92,22 @@ public class MarginFundingService {
 
 		Map<String, String> response = connectionUtil.sendPostRequest(url, headerList, body);
 
-		if(response.get("responseCode").equals("200")) {
-			String responseMessage = response.get("responseMessage");
-			responseMessage = responseMessage.replace("[", "").replace("]", "");
+		try{
+			if(response.get("responseCode").equals("200")) {
+				String responseMessage = response.get("responseMessage");
+				responseMessage = responseMessage.replace("[", "").replace("]", "");
 
-			String[] responseMessageArray = responseMessage.split(",");
-			orderId = responseMessageArray[4];
+				String[] responseMessageArray = responseMessage.split(",");
+				orderId = responseMessageArray[4];
 
+			}
 		}
+		catch(Exception ex){
+			telegramNotificationUtil.sendNotification(ex.toString());
+			telegramNotificationUtil.sendNotification("response code: " + response.get("responseCode"));
+			telegramNotificationUtil.sendNotification("response msg: " + response.get("responseMessage"));
+		}
+
 
 		return orderId;
 	}
@@ -136,44 +148,53 @@ public class MarginFundingService {
 		headerList.put("bfx-signature", sigHashText);
 
 		Map<String, String> response = connectionUtil.sendPostRequest(url, headerList, "");
-		if(response.get("responseCode").equals("200")) {
-			String responseMessage = response.get("responseMessage");
 
-			if(responseMessage.equals("[]")){
+		try{
+			if(response.get("responseCode").equals("200")) {
+				String responseMessage = response.get("responseMessage");
+
+				if(responseMessage.equals("[]")){
 					return result;
-			}
+				}
 
-			responseMessage = responseMessage.substring(2, responseMessage.length() - 2);
-			String[] activeOrderStringList = responseMessage.split("\\],\\[");
-			for(int i = 0; i < activeOrderStringList.length; i++){
-				String original = activeOrderStringList[i].replace("\"", "");
-				String[] informList = original.split(",");
+				responseMessage = responseMessage.substring(2, responseMessage.length() - 2);
+				String[] activeOrderStringList = responseMessage.split("\\],\\[");
+				for(int i = 0; i < activeOrderStringList.length; i++){
+					String original = activeOrderStringList[i].replace("\"", "");
+					String[] informList = original.split(",");
 
-				BitfinexActiveOrderDto dto = new BitfinexActiveOrderDto();
-				dto.setId(informList[0]);
-				dto.setSymbol(informList[1]);
-				dto.setCreateTime(new Timestamp(Long.parseLong(informList[2])));
-				dto.setUpdateTime(new Timestamp(Long.parseLong(informList[3])));
-				dto.setAmount(new BigDecimal(informList[4]));
-				dto.setAmountOriginal(new BigDecimal(informList[5]));
-				dto.setType(informList[6]);
+					BitfinexActiveOrderDto dto = new BitfinexActiveOrderDto();
+					dto.setId(informList[0]);
+					dto.setSymbol(informList[1]);
+					dto.setCreateTime(new Timestamp(Long.parseLong(informList[2])));
+					dto.setUpdateTime(new Timestamp(Long.parseLong(informList[3])));
+					dto.setAmount(new BigDecimal(informList[4]));
+					dto.setAmountOriginal(new BigDecimal(informList[5]));
+					dto.setType(informList[6]);
 //				dto.setPlaceHolder0(informList[7]);
 //				dto.setPlaceHolder1(informList[8]);
-				dto.setFlags(informList[9]);
-				dto.setStatus(informList[10]);
+					dto.setFlags(informList[9]);
+					dto.setStatus(informList[10]);
 //				dto.setPlaceHolder2(informList[11]);
 //				dto.setPlaceHolder3(informList[12]);
 //				dto.setPlaceHolder4(informList[13]);
-				dto.setRate(new BigDecimal(informList[14]));
-				dto.setPeriod(Integer.parseInt(informList[15]));
-				dto.setNotify(Integer.parseInt(informList[16]));
-				dto.setHidden(Integer.parseInt(informList[17]));
+					dto.setRate(new BigDecimal(informList[14]));
+					dto.setPeriod(Integer.parseInt(informList[15]));
+					dto.setNotify(Integer.parseInt(informList[16]));
+					dto.setHidden(Integer.parseInt(informList[17]));
 //				dto.setGetPlaceHolder5(informList[18]);
-				dto.setRenew(Integer.parseInt(informList[19]));
+					dto.setRenew(Integer.parseInt(informList[19]));
 
-				result.add(dto);
+					result.add(dto);
+				}
 			}
 		}
+		catch(Exception ex){
+			telegramNotificationUtil.sendNotification(ex.toString());
+			telegramNotificationUtil.sendNotification("response code: " + response.get("responseCode"));
+			telegramNotificationUtil.sendNotification("response msg: " + response.get("responseMessage"));
+		}
+
 
 		return result;
 	}

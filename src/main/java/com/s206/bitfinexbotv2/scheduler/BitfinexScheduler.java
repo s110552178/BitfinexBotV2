@@ -9,6 +9,7 @@ import com.s206.bitfinexbotv2.repository.FundSettingRepository;
 import com.s206.bitfinexbotv2.repository.SecretRepository;
 import com.s206.bitfinexbotv2.repository.WaitingOrderRepository;
 import com.s206.bitfinexbotv2.service.AmountService;
+import com.s206.bitfinexbotv2.service.CalculateService;
 import com.s206.bitfinexbotv2.service.MarginFundingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,6 +34,8 @@ public class BitfinexScheduler {
 	private MarginFundingService marginFundingService;
 	@Autowired
 	private WaitingOrderRepository waitingOrderRepository;
+	@Autowired
+	private CalculateService calculateService;
 
 	@Value("${properties.order.refresh.time}")
 	private Long waitingOrderRefreshTime;
@@ -42,6 +45,7 @@ public class BitfinexScheduler {
 	@Scheduled(fixedDelay = 3600000)
 	public void removeExpiredOrder(){
 		Iterable<WaitingOrder> waitingOrderIterable = waitingOrderRepository.findAll();
+
 		waitingOrderIterable.forEach( waitingOrder -> {
 			if(System.currentTimeMillis() - waitingOrder.getOrder_create_time() > waitingOrderExpiredTime){
 				waitingOrderRepository.delete(waitingOrder);
@@ -49,8 +53,10 @@ public class BitfinexScheduler {
 		});
 
 	}
+
 	@Scheduled(cron = "30 * * * * *")
 	public void updateWaitingOrder(){
+
 		try{
 
 			Optional<Secret> secretOptional = secretRepository.findById(1L);
@@ -73,7 +79,7 @@ public class BitfinexScheduler {
 								case "fUSD":
 									currency = "USD";
 									break;
-								case "eth":
+								case "fETH":
 									currency = "ETH";
 									break;
 								case "fDOGE":
@@ -134,9 +140,20 @@ public class BitfinexScheduler {
 
 							break;
 						case "DOGE":
+							BigDecimal dogeUSDexchangeRate = calculateService.exchangeRate("DOGE","USD");
+							if((walletDto.getAvailableBalance().multiply(dogeUSDexchangeRate)).compareTo(new BigDecimal(50)) > 0){
+								orderId = marginFundingService.submitFundingOrder("fDOGE", secret.getSecretKey(), secret.getSecretPassword(),
+										walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
 
-							orderId = marginFundingService.submitFundingOrder("fDOGE", secret.getSecretKey(), secret.getSecretPassword(),
-									walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
+							}
+							break;
+						case "XMR":
+							BigDecimal xmrUSDexchangeRate = calculateService.exchangeRate("XMR","USD");
+							if((walletDto.getAvailableBalance().multiply(xmrUSDexchangeRate)).compareTo(new BigDecimal(50)) > 0){
+								orderId = marginFundingService.submitFundingOrder("fXMR", secret.getSecretKey(), secret.getSecretPassword(),
+										walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
+
+							}
 							break;
 						default:
 							orderId = marginFundingService.submitFundingOrder(fundSetting.getCurrency(), secret.getSecretKey(), secret.getSecretPassword(),
