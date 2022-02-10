@@ -1,5 +1,6 @@
 package com.s206.bitfinexbotv2.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.s206.bitfinexbotv2.dto.BitfinexWalletDto;
 import com.s206.bitfinexbotv2.util.ConnectionUtil;
 import com.s206.bitfinexbotv2.util.SecurityUtil;
@@ -29,6 +30,8 @@ public class AmountService {
 	@Autowired
 	private TelegramNotificationUtil telegramNotificationUtil;
 
+	private ObjectMapper objectMapper = new ObjectMapper();
+
 	public List<BitfinexWalletDto> getAmount(String apiKey, String apiSecret){
 
 		List<BitfinexWalletDto> result = new ArrayList<>();
@@ -54,17 +57,25 @@ public class AmountService {
 				String[] walletStringList = responseMessage.split("\\],\\[");
 
 				for (int i = 0; i < walletStringList.length; i++) {
-					String original = walletStringList[i].replace("\"", "");
-					String[] informList = original.split(",");
 
-					BitfinexWalletDto dto = new BitfinexWalletDto();
-					dto.setWalletType(informList[0]);
-					dto.setCurrency(informList[1]);
-					dto.setBalance(new BigDecimal(informList[2]));
-					dto.setUnsettledInterest(new BigDecimal(informList[3]));
-					dto.setAvailableBalance(new BigDecimal(informList[4]));
-					dto.setLastChange(informList[5]);
-					dto.setTraceDetail(informList[6]);
+					StringBuilder sb = new StringBuilder(walletStringList[i]);
+					sb.insert(0, "[");
+					sb.insert(sb.length(),"]");
+					String finalString = sb.toString();
+
+					BitfinexWalletDto dto = objectMapper.readValue(finalString, BitfinexWalletDto.class);
+
+//					String original = walletStringList[i].replace("\"", "");
+//					String[] informList = original.split(",");
+//
+//					BitfinexWalletDto dto = new BitfinexWalletDto();
+//					dto.setWalletType(informList[0]);
+//					dto.setCurrency(informList[1]);
+//					dto.setBalance(new BigDecimal(informList[2]));
+//					dto.setUnsettledInterest(new BigDecimal(informList[3]));
+//					dto.setAvailableBalance(new BigDecimal(informList[4]));
+//					dto.setLastChange(informList[5]);
+//					dto.setTraceDetail(informList[6]);
 					result.add(dto);
 				}
 			}

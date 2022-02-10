@@ -1,7 +1,15 @@
 package com.s206.bitfinexbotv2.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+
+@JsonFormat(shape = JsonFormat.Shape.ARRAY)
+@JsonPropertyOrder({"id", "symbol", "createTime", "updateTime", "amount", "amountOriginal",
+		"type", "placeHolder0", "placeHolder1", "flags", "status", "placeHolder2", "placeHolder3",
+		"placeHolder4", "rate", "period", "notify", "hidden", "placeHolder5", "renew", "placeHolder6"})
 
 public class BitfinexActiveOrderDto {
 	private String id;
@@ -11,19 +19,20 @@ public class BitfinexActiveOrderDto {
 	private BigDecimal amount;
 	private BigDecimal amountOriginal;
 	private String type;
-//	private Object placeHolder0;
-//	private Object placeHolder1;
+	private Object placeHolder0;
+	private Object placeHolder1;
 	private Object flags;
 	private String status;
-//	private Object placeHolder2;
-//	private Object placeHolder3;
-//	private Object placeHolder4;
+	private Object placeHolder2;
+	private Object placeHolder3;
+	private Object placeHolder4;
 	private BigDecimal rate;
 	private Integer period;
 	private Integer notify;
 	private Integer hidden;
-//	private Object getPlaceHolder5;
+	private Object placeHolder5;
 	private Integer renew;
+	private Object placeHolder6;
 
 	public String getId() {
 		return id;
@@ -81,21 +90,21 @@ public class BitfinexActiveOrderDto {
 		this.type = type;
 	}
 
-//	public Object getPlaceHolder0() {
-//		return placeHolder0;
-//	}
-//
-//	public void setPlaceHolder0(Object placeHolder0) {
-//		this.placeHolder0 = placeHolder0;
-//	}
-//
-//	public Object getPlaceHolder1() {
-//		return placeHolder1;
-//	}
-//
-//	public void setPlaceHolder1(Object placeHolder1) {
-//		this.placeHolder1 = placeHolder1;
-//	}
+	public Object getPlaceHolder0() {
+		return placeHolder0;
+	}
+
+	public void setPlaceHolder0(Object placeHolder0) {
+		this.placeHolder0 = placeHolder0;
+	}
+
+	public Object getPlaceHolder1() {
+		return placeHolder1;
+	}
+
+	public void setPlaceHolder1(Object placeHolder1) {
+		this.placeHolder1 = placeHolder1;
+	}
 
 	public Object getFlags() {
 		return flags;
@@ -113,29 +122,29 @@ public class BitfinexActiveOrderDto {
 		this.status = status;
 	}
 
-//	public Object getPlaceHolder2() {
-//		return placeHolder2;
-//	}
-//
-//	public void setPlaceHolder2(Object placeHolder2) {
-//		this.placeHolder2 = placeHolder2;
-//	}
-//
-//	public Object getPlaceHolder3() {
-//		return placeHolder3;
-//	}
-//
-//	public void setPlaceHolder3(Object placeHolder3) {
-//		this.placeHolder3 = placeHolder3;
-//	}
-//
-//	public Object getPlaceHolder4() {
-//		return placeHolder4;
-//	}
-//
-//	public void setPlaceHolder4(Object placeHolder4) {
-//		this.placeHolder4 = placeHolder4;
-//	}
+	public Object getPlaceHolder2() {
+		return placeHolder2;
+	}
+
+	public void setPlaceHolder2(Object placeHolder2) {
+		this.placeHolder2 = placeHolder2;
+	}
+
+	public Object getPlaceHolder3() {
+		return placeHolder3;
+	}
+
+	public void setPlaceHolder3(Object placeHolder3) {
+		this.placeHolder3 = placeHolder3;
+	}
+
+	public Object getPlaceHolder4() {
+		return placeHolder4;
+	}
+
+	public void setPlaceHolder4(Object placeHolder4) {
+		this.placeHolder4 = placeHolder4;
+	}
 
 	public BigDecimal getRate() {
 		return rate;
@@ -169,13 +178,13 @@ public class BitfinexActiveOrderDto {
 		this.hidden = hidden;
 	}
 
-//	public Object getGetPlaceHolder5() {
-//		return getPlaceHolder5;
-//	}
-//
-//	public void setGetPlaceHolder5(Object getPlaceHolder5) {
-//		this.getPlaceHolder5 = getPlaceHolder5;
-//	}
+	public Object getPlaceHolder5() {
+		return placeHolder5;
+	}
+
+	public void setPlaceHolder5(Object placeHolder5) {
+		this.placeHolder5 = placeHolder5;
+	}
 
 	public Integer getRenew() {
 		return renew;
@@ -183,5 +192,13 @@ public class BitfinexActiveOrderDto {
 
 	public void setRenew(Integer renew) {
 		this.renew = renew;
+	}
+
+	public Object getPlaceHolder6() {
+		return placeHolder6;
+	}
+
+	public void setPlaceHolder6(Object placeHolder6) {
+		this.placeHolder6 = placeHolder6;
 	}
 }

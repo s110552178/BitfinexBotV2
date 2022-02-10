@@ -1,8 +1,14 @@
 package com.s206.bitfinexbotv2.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import java.math.BigDecimal;
 
+@JsonFormat(shape = JsonFormat.Shape.ARRAY)
+@JsonPropertyOrder({"walletType", "currency", "balance", "unsettledInterest", "avaiableBalance", "lastChange", "traceDetail"})
 public class BitfinexWalletDto {
+
 	private String walletType;
 	private String currency;
 	private BigDecimal balance;

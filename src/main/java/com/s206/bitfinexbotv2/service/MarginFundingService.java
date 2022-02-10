@@ -160,30 +160,12 @@ public class MarginFundingService {
 				responseMessage = responseMessage.substring(2, responseMessage.length() - 2);
 				String[] activeOrderStringList = responseMessage.split("\\],\\[");
 				for(int i = 0; i < activeOrderStringList.length; i++){
-					String original = activeOrderStringList[i].replace("\"", "");
-					String[] informList = original.split(",");
+					StringBuilder sb = new StringBuilder(activeOrderStringList[i]);
+					sb.insert(0, "[");
+					sb.insert(sb.length(),"]");
+					String finalString = sb.toString();
 
-					BitfinexActiveOrderDto dto = new BitfinexActiveOrderDto();
-					dto.setId(informList[0]);
-					dto.setSymbol(informList[1]);
-					dto.setCreateTime(new Timestamp(Long.parseLong(informList[2])));
-					dto.setUpdateTime(new Timestamp(Long.parseLong(informList[3])));
-					dto.setAmount(new BigDecimal(informList[4]));
-					dto.setAmountOriginal(new BigDecimal(informList[5]));
-					dto.setType(informList[6]);
-//				dto.setPlaceHolder0(informList[7]);
-//				dto.setPlaceHolder1(informList[8]);
-					dto.setFlags(informList[9]);
-					dto.setStatus(informList[10]);
-//				dto.setPlaceHolder2(informList[11]);
-//				dto.setPlaceHolder3(informList[12]);
-//				dto.setPlaceHolder4(informList[13]);
-					dto.setRate(new BigDecimal(informList[14]));
-					dto.setPeriod(Integer.parseInt(informList[15]));
-					dto.setNotify(Integer.parseInt(informList[16]));
-					dto.setHidden(Integer.parseInt(informList[17]));
-//				dto.setGetPlaceHolder5(informList[18]);
-					dto.setRenew(Integer.parseInt(informList[19]));
+					BitfinexActiveOrderDto dto = objectMapper.readValue(finalString, BitfinexActiveOrderDto.class);
 
 					result.add(dto);
 				}
