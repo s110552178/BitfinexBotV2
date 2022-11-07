@@ -7,11 +7,13 @@ import com.s206.bitfinexbotv2.dto.BitfinexActiveOrderDto;
 import com.s206.bitfinexbotv2.util.ConnectionUtil;
 import com.s206.bitfinexbotv2.util.SecurityUtil;
 import com.s206.bitfinexbotv2.util.TelegramNotificationUtil;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.ConnectException;
 import java.sql.Timestamp;
@@ -28,6 +30,8 @@ public class MarginFundingService {
 
 	@Value("${properties.bitfinex.domain}")
 	private String domain;
+	@Value("${affiliate.code}")
+	private String affCode;
 	@Autowired
 	private SecurityUtil securityUtil;
 	@Autowired
@@ -35,13 +39,41 @@ public class MarginFundingService {
 
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	public void cancelFundingOrder(Long orderId, String apiKey, String apiSecret) throws JsonProcessingException {
+	public void getFundingHistoryData(String currency, Long startTime, Long endTime, String apiSecret, String apiKey) throws JsonProcessingException {
+
+		// half finish
+
+		String apiPath = "v2/auth/r/funding/offers/" + currency + "/hist";
+		String url = domain + apiPath;
+		String nonce = Long.toString(System.currentTimeMillis() * 1000);
+
+		ObjectNode objectNode = objectMapper.createObjectNode();
+		if(startTime != null)
+			objectNode.put("start", startTime);
+		if(endTime != null)
+			objectNode.put("end", endTime);
+		objectNode.put("limit", 100);
+
+		String body = objectMapper.writeValueAsString(objectNode);
+		String sigPlainText = "/api/" + apiPath + nonce + body;
+		String sigHashText = securityUtil.HmacSHA384(sigPlainText, apiSecret);
+		Map<String, String> headerList = new HashMap<>();
+		headerList.put("bfx-nonce", nonce);
+		headerList.put("bfx-apikey", apiKey);
+		headerList.put("bfx-signature", sigHashText);
+
+		Map<String, String> response = connectionUtil.sendPostRequest(url, headerList, body);
+
+	}
+
+
+	public void cancelFundingOrder(String orderId, String apiKey, String apiSecret) throws JsonProcessingException {
 		String apiPath = "v2/auth/w/funding/offer/cancel";
 		String url = domain + apiPath;
 		String nonce = Long.toString(System.currentTimeMillis() * 1000);
 
 		ObjectNode objectNode = objectMapper.createObjectNode();
-		objectNode.put("id", orderId);
+		objectNode.put("id", Long.parseLong(orderId));
 		String body = objectMapper.writeValueAsString(objectNode);
 
 		String sigPlainText = "/api/" + apiPath + nonce + body;
@@ -76,10 +108,12 @@ public class MarginFundingService {
 		ObjectNode objectNode = objectMapper.createObjectNode();
 		objectNode.put("type", "LIMIT");
 		objectNode.put("symbol", symbol);
+		amount = amount.setScale(5, RoundingMode.DOWN);
 		objectNode.put("amount", amount.toString());
 		objectNode.put("rate", rate.divide(new BigDecimal(365), 12, RoundingMode.HALF_UP).divide(new BigDecimal(100)).toString());
 		objectNode.put("period", period);
 		objectNode.put("flags", "0");
+		objectNode.put("aff_code", affCode);
 		String body = objectMapper.writeValueAsString(objectNode);
 
 		String sigPlainText = "/api/" + apiPath + nonce + body;
@@ -101,6 +135,7 @@ public class MarginFundingService {
 				orderId = responseMessageArray[4];
 
 			}
+
 		}
 		catch(Exception ex){
 			telegramNotificationUtil.sendNotification(ex.toString());
@@ -108,29 +143,7 @@ public class MarginFundingService {
 			telegramNotificationUtil.sendNotification("response msg: " + response.get("responseMessage"));
 		}
 
-
 		return orderId;
-	}
-
-	public void getFundingOrderHistory(String symbol, String apiKey, String apiSecret) throws JsonProcessingException {
-		String apiPath = "v2/auth/r/funding/offers/" + symbol + "/hist";
-		String url = domain + apiPath;
-
-		String nonce = Long.toString(System.currentTimeMillis() * 1000);
-		String sigPlainText = "/api/" + apiPath + nonce;
-
-		String sigHashText = securityUtil.HmacSHA384(sigPlainText, apiSecret);
-		Map<String, String> headerList = new HashMap<>();
-		headerList.put("bfx-nonce", nonce);
-		headerList.put("bfx-apikey", apiKey);
-		headerList.put("bfx-signature", sigHashText);
-
-		ObjectNode objectNode = objectMapper.createObjectNode();
-		objectNode.put("limit",10);
-		String body = objectMapper.writeValueAsString(objectNode);
-
-		Map<String, String> response = connectionUtil.sendPostRequest(url, headerList, "");
-
 	}
 
 	public List<BitfinexActiveOrderDto> getActiveWaitingOrder(String symbol, String apiKey, String apiSecret){

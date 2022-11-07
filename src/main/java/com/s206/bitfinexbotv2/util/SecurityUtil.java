@@ -26,21 +26,6 @@ public class SecurityUtil {
 				sb.append(hex);
 			}
 			result = sb.toString();
-//			SecretKeySpec key = new SecretKeySpec((encryptKey).getBytes("UTF-8"), algo);
-//			Mac mac = Mac.getInstance(algo);
-//			mac.init(key);
-//
-//			byte[] bytes = mac.doFinal(plainText.getBytes("ASCII"));
-//
-//			StringBuffer hash = new StringBuffer();
-//			for (int i = 0; i < bytes.length; i++) {
-//				String hex = Integer.toHexString(0xFF & bytes[i]);
-//				if (hex.length() == 1) {
-//					hash.append('0');
-//				}
-//				hash.append(hex);
-//			}
-//			result = hash.toString();
 		}
 
 		catch (Exception ex){

@@ -1,16 +1,21 @@
 package com.s206.bitfinexbotv2.scheduler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.s206.bitfinexbotv2.dto.BitfinexActiveOrderDto;
 import com.s206.bitfinexbotv2.dto.BitfinexWalletDto;
+import com.s206.bitfinexbotv2.entity.AdvancedFundSetting;
 import com.s206.bitfinexbotv2.entity.FundSetting;
 import com.s206.bitfinexbotv2.entity.Secret;
 import com.s206.bitfinexbotv2.entity.WaitingOrder;
+import com.s206.bitfinexbotv2.repository.AdvancedFundSettingRepository;
 import com.s206.bitfinexbotv2.repository.FundSettingRepository;
 import com.s206.bitfinexbotv2.repository.SecretRepository;
 import com.s206.bitfinexbotv2.repository.WaitingOrderRepository;
 import com.s206.bitfinexbotv2.service.AmountService;
 import com.s206.bitfinexbotv2.service.CalculateService;
 import com.s206.bitfinexbotv2.service.MarginFundingService;
+import com.s206.bitfinexbotv2.util.TelegramNotificationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -36,11 +41,20 @@ public class BitfinexScheduler {
 	private WaitingOrderRepository waitingOrderRepository;
 	@Autowired
 	private CalculateService calculateService;
+	@Autowired
+	private AdvancedFundSettingRepository advancedFundSettingRepository;
+	@Autowired
+	private TelegramNotificationUtil notificationUtil;
+
+	private ObjectMapper mapper = new ObjectMapper();
 
 	@Value("${properties.order.refresh.time}")
 	private Long waitingOrderRefreshTime;
 	@Value("${properties.order.expired.time}")
 	private Long waitingOrderExpiredTime;
+	@Value("${properties.minimum.funding.order.price}")
+	private Long minimumFundingOrderPrice;
+
 
 	@Scheduled(fixedDelay = 3600000)
 	public void removeExpiredOrder(){
@@ -54,10 +68,9 @@ public class BitfinexScheduler {
 
 	}
 
-	@Scheduled(cron = "30 * * * * *")
-	public void updateWaitingOrder(){
+	@Scheduled(cron = "20 * * * * *")
+	public void updateWaitingOrder() {
 
-		try{
 
 			Optional<Secret> secretOptional = secretRepository.findById(1L);
 			Secret secret = secretOptional.get();
@@ -66,16 +79,16 @@ public class BitfinexScheduler {
 			Iterable<WaitingOrder> list = waitingOrderRepository.findAll();
 
 			list.forEach( waitingOrder -> {
-				try{
-					Long orderId = waitingOrder.getOrderId();
-					for(int i = 0; i < activeOrderDtoList.size(); i++){
+				try {
+					String orderId = waitingOrder.getOrderId();
+					for (int i = 0; i < activeOrderDtoList.size(); i++) {
 						BitfinexActiveOrderDto bitfinexOrder = activeOrderDtoList.get(i);
-						Long bitfinexActiveOrderId = Long.parseLong(bitfinexOrder.getId());
-						if(bitfinexActiveOrderId.compareTo(orderId) == 0  &&
-								System.currentTimeMillis() - bitfinexOrder.getCreateTime().getTime() > waitingOrderRefreshTime){
+						String bitfinexActiveOrderId = bitfinexOrder.getId();
+						if (bitfinexActiveOrderId.equals(orderId) &&
+								System.currentTimeMillis() - bitfinexOrder.getCreateTime().getTime() > waitingOrderRefreshTime) {
 
 							String currency = "";
-							switch (bitfinexOrder.getSymbol()){
+							switch (bitfinexOrder.getSymbol()) {
 								case "fUSD":
 									currency = "USD";
 									break;
@@ -90,27 +103,47 @@ public class BitfinexScheduler {
 							}
 
 							FundSetting fundSetting = fundSettingRepository.findByCurrency(currency).get();
+
 							marginFundingService.cancelFundingOrder(bitfinexActiveOrderId, secret.getSecretKey(), secret.getSecretPassword());
 							BigDecimal newRate = bitfinexOrder.getRate().multiply(new BigDecimal(100)).multiply(new BigDecimal(365));
 							newRate = newRate.subtract(fundSetting.getDropDownRate());
+							// try to process advanced funding setting
+							List<AdvancedFundSetting> advancedFundSettingList = getAdvancedFundSetting(fundSetting);
+							if (newRate.compareTo(fundSetting.getLowestRateYearly()) <= 0) {
+								newRate = fundSetting.getLowestRateYearly();
+							} else {
+								//List<AdvancedFundSetting> greaterAdvancedFundSettings = advancedFundSettingRepository.findAdvancedFundSettingByHighestRateGreaterThanEqualOrderByHighestRateDesc(newRate);
+								List<AdvancedFundSetting> lowerAdvancedFundSettings = advancedFundSettingRepository.findAdvancedFundSettingByFundSettingIdAndHighestRateLessThanOrderByHighestRateDesc(fundSetting.getId(), newRate);
+								if (lowerAdvancedFundSettings.size() > 0) {
+									AdvancedFundSetting advancedFundSetting = lowerAdvancedFundSettings.get(0);
+
+									fundSetting.setPreferLendingPeriod(advancedFundSetting.getFundLendingPeriod());
+
+								} else {
+									List<AdvancedFundSetting> advancedFundSettings = advancedFundSettingRepository.findAdvancedFundSettingByFundSettingIdOrderByHighestRateAsc(fundSetting.getId());
+
+									if (advancedFundSettings.size() > 0) {
+										fundSetting.setPreferLendingPeriod(advancedFundSettings.get(0).getFundLendingPeriod());
+									}
+
+								}
+							}
+
+							//
 							String newOrderId = marginFundingService.submitFundingOrder(bitfinexOrder.getSymbol(), secret.getSecretKey(), secret.getSecretPassword(),
 									bitfinexOrder.getAmount(), newRate, fundSetting.getPreferLendingPeriod());
-							waitingOrder.setOrderId(Long.parseLong(newOrderId));
+							waitingOrder.setOrderId(newOrderId);
 							waitingOrder.setOrder_create_time(System.currentTimeMillis());
 							waitingOrderRepository.save(waitingOrder);
 						}
 					}
 				}
-				catch (Exception ex){
+				catch(Exception ex){
 					ex.printStackTrace();
 				}
 
 			});
 
-		}
-		catch (Exception ex){
-			ex.printStackTrace();
-		}
 	}
 
 
@@ -121,10 +154,19 @@ public class BitfinexScheduler {
 			Optional<Secret> secretOptional = secretRepository.findById(1L);
 			Secret secret = secretOptional.get();
 			List<BitfinexWalletDto> walletDtoList = amountService.getAmount(secret.getSecretKey(), secret.getSecretPassword());
+			// remove wallet data which is not "Funding" wallet type
+			for(int i = 0; i < walletDtoList.size(); i++){
 
+				BitfinexWalletDto walletDto = walletDtoList.get(i);
+				if(!walletDto.getWalletType().equals("funding")){
+					walletDtoList.remove(i);
+				}
+			}
+				//
 			for(int i = 0; i < walletDtoList.size(); i++){
 				BitfinexWalletDto walletDto = walletDtoList.get(i);
 				FundSetting fundSetting = getFundSetting(walletDto.getCurrency());
+
 				if(fundSetting == null || walletDto.getWalletType().equals("exchange")){
 					// wallet Type is not funding, so ignore it
 				}
@@ -133,15 +175,14 @@ public class BitfinexScheduler {
 					switch(fundSetting.getCurrency()){
 						case "USD":
 							BigDecimal lendingMoney = walletDto.getAvailableBalance().subtract(fundSetting.getAccountLowestBalance());
-							if(lendingMoney.compareTo(new BigDecimal(50)) > 0 || lendingMoney.compareTo(new BigDecimal(50)) == 0){
+							if(lendingMoney.compareTo(new BigDecimal(minimumFundingOrderPrice)) > 0 || lendingMoney.compareTo(new BigDecimal(minimumFundingOrderPrice)) == 0){
 								orderId = marginFundingService.submitFundingOrder("fUSD", secret.getSecretKey(), secret.getSecretPassword(),
 										lendingMoney, fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
 							}
-
 							break;
 						case "DOGE":
 							BigDecimal dogeUSDexchangeRate = calculateService.exchangeRate("DOGE","USD");
-							if((walletDto.getAvailableBalance().multiply(dogeUSDexchangeRate)).compareTo(new BigDecimal(50)) > 0){
+							if((walletDto.getAvailableBalance().multiply(dogeUSDexchangeRate)).compareTo(new BigDecimal(minimumFundingOrderPrice)) > 0){
 								orderId = marginFundingService.submitFundingOrder("fDOGE", secret.getSecretKey(), secret.getSecretPassword(),
 										walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
 
@@ -149,10 +190,23 @@ public class BitfinexScheduler {
 							break;
 						case "XMR":
 							BigDecimal xmrUSDexchangeRate = calculateService.exchangeRate("XMR","USD");
-							if((walletDto.getAvailableBalance().multiply(xmrUSDexchangeRate)).compareTo(new BigDecimal(50)) > 0){
+							if((walletDto.getAvailableBalance().multiply(xmrUSDexchangeRate)).compareTo(new BigDecimal(minimumFundingOrderPrice)) > 0){
 								orderId = marginFundingService.submitFundingOrder("fXMR", secret.getSecretKey(), secret.getSecretPassword(),
 										walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
-
+							}
+							break;
+						case "ETH":
+							BigDecimal ethUSDExchangeRate = calculateService.exchangeRate("ETH", "USD");
+							if((walletDto.getAvailableBalance().multiply(ethUSDExchangeRate)).compareTo(new BigDecimal(minimumFundingOrderPrice)) > 0){
+								orderId = marginFundingService.submitFundingOrder("fETH", secret.getSecretKey(), secret.getSecretPassword(),
+										walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
+							}
+							break;
+						case "LTC":
+							BigDecimal ltcUSDExchangeRate = calculateService.exchangeRate("LTC", "USD");
+							if((walletDto.getAvailableBalance().multiply(ltcUSDExchangeRate)).compareTo(new BigDecimal(minimumFundingOrderPrice)) > 0){
+								orderId = marginFundingService.submitFundingOrder("fLTC", secret.getSecretKey(), secret.getSecretPassword(),
+										walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
 							}
 							break;
 						default:
@@ -163,7 +217,7 @@ public class BitfinexScheduler {
 					}
 					if(orderId != null){
 						WaitingOrder waitingOrder = new WaitingOrder();
-						waitingOrder.setOrderId(Long.parseLong(orderId));
+						waitingOrder.setOrderId(orderId);
 						waitingOrder.setOrder_create_time(System.currentTimeMillis());
 						waitingOrderRepository.save(waitingOrder);
 					}
@@ -183,12 +237,25 @@ public class BitfinexScheduler {
 		FundSetting fundSetting = null;
 		Optional<FundSetting> fundSettingOptional = fundSettingRepository.findByCurrencyAndStatus(currency, true);
 		if(!fundSettingOptional.isPresent()){
-			System.out.println(currency + "Fund config is not exist");
+			System.out.println(currency + " Fund config is not exist");
 		}
 		else{
 			fundSetting = fundSettingOptional.get();
+
 		}
+
 		return fundSetting;
+	}
+
+	/*
+		get better rate if possible
+	 */
+	private List<AdvancedFundSetting> getAdvancedFundSetting(FundSetting fundSetting){
+
+		List<AdvancedFundSetting> advancedFundSettingList = advancedFundSettingRepository.findAdvancedFundSettingByFundSettingIdOrderByHighestRateDesc(fundSetting.getId());
+
+
+		return advancedFundSettingList;
 	}
 
 }

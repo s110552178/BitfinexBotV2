@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.math.BigDecimal;
 
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
-@JsonPropertyOrder({"walletType", "currency", "balance", "unsettledInterest", "avaiableBalance", "lastChange", "traceDetail"})
+@JsonPropertyOrder({"walletType", "currency", "balance", "unsettledInterest", "availableBalance", "lastChange", "traceDetail"})
 public class BitfinexWalletDto {
 
 	private String walletType;

@@ -11,7 +11,7 @@ public class WaitingOrder {
 	private long id;
 
 	@Column(name = "order_id")
-	private Long orderId;
+	private String orderId;
 	@Column(name = "order_create_time")
 	private Long order_create_time;
 
@@ -23,11 +23,11 @@ public class WaitingOrder {
 		this.id = id;
 	}
 
-	public Long getOrderId() {
+	public String getOrderId() {
 		return orderId;
 	}
 
-	public void setOrderId(Long orderId) {
+	public void setOrderId(String orderId) {
 		this.orderId = orderId;
 	}
 
