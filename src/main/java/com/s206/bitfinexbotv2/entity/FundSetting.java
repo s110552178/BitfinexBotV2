@@ -28,6 +28,8 @@ public class FundSetting {
 	private BigDecimal lowestRateYearly;
 	@Column(name = "status")
 	private Boolean status;
+	@Column(name = "initialize_rate")
+	private BigDecimal initializeRate;
 
 	public Long getId() {
 		return id;
@@ -99,5 +101,13 @@ public class FundSetting {
 
 	public void setStatus(Boolean status) {
 		this.status = status;
+	}
+
+	public BigDecimal getInitializeRate() {
+		return initializeRate;
+	}
+
+	public void setInitializeRate(BigDecimal initializeRate) {
+		this.initializeRate = initializeRate;
 	}
 }

@@ -43,10 +43,10 @@ public class BitfinexScheduler {
 	private CalculateService calculateService;
 	@Autowired
 	private AdvancedFundSettingRepository advancedFundSettingRepository;
-	@Autowired
-	private TelegramNotificationUtil notificationUtil;
+//	@Autowired
+//	private TelegramNotificationUtil notificationUtil;
 
-	private ObjectMapper mapper = new ObjectMapper();
+//	private ObjectMapper mapper = new ObjectMapper();
 
 	@Value("${properties.order.refresh.time}")
 	private Long waitingOrderRefreshTime;
@@ -108,11 +108,10 @@ public class BitfinexScheduler {
 							BigDecimal newRate = bitfinexOrder.getRate().multiply(new BigDecimal(100)).multiply(new BigDecimal(365));
 							newRate = newRate.subtract(fundSetting.getDropDownRate());
 							// try to process advanced funding setting
-							List<AdvancedFundSetting> advancedFundSettingList = getAdvancedFundSetting(fundSetting);
+
 							if (newRate.compareTo(fundSetting.getLowestRateYearly()) <= 0) {
 								newRate = fundSetting.getLowestRateYearly();
 							} else {
-								//List<AdvancedFundSetting> greaterAdvancedFundSettings = advancedFundSettingRepository.findAdvancedFundSettingByHighestRateGreaterThanEqualOrderByHighestRateDesc(newRate);
 								List<AdvancedFundSetting> lowerAdvancedFundSettings = advancedFundSettingRepository.findAdvancedFundSettingByFundSettingIdAndHighestRateLessThanOrderByHighestRateDesc(fundSetting.getId(), newRate);
 								if (lowerAdvancedFundSettings.size() > 0) {
 									AdvancedFundSetting advancedFundSetting = lowerAdvancedFundSettings.get(0);
@@ -166,6 +165,12 @@ public class BitfinexScheduler {
 			for(int i = 0; i < walletDtoList.size(); i++){
 				BitfinexWalletDto walletDto = walletDtoList.get(i);
 				FundSetting fundSetting = getFundSetting(walletDto.getCurrency());
+				List<AdvancedFundSetting> advancedFundSettingList = advancedFundSettingRepository.findAdvancedFundSettingByFundSettingIdOrderByHighestRateAsc(fundSetting.getId());
+				if(advancedFundSettingList != null && advancedFundSettingList.size() > 0){
+					// change setting to advanced setting
+					AdvancedFundSetting advancedFundSetting = advancedFundSettingList.get(0);
+					fundSetting.setPreferLendingPeriod(advancedFundSetting.getFundLendingPeriod());
+				}
 
 				if(fundSetting == null || walletDto.getWalletType().equals("exchange")){
 					// wallet Type is not funding, so ignore it
@@ -177,41 +182,40 @@ public class BitfinexScheduler {
 							BigDecimal lendingMoney = walletDto.getAvailableBalance().subtract(fundSetting.getAccountLowestBalance());
 							if(lendingMoney.compareTo(new BigDecimal(minimumFundingOrderPrice)) > 0 || lendingMoney.compareTo(new BigDecimal(minimumFundingOrderPrice)) == 0){
 								orderId = marginFundingService.submitFundingOrder("fUSD", secret.getSecretKey(), secret.getSecretPassword(),
-										lendingMoney, fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
+										lendingMoney, fundSetting.getInitializeRate(), fundSetting.getPreferLendingPeriod());
 							}
 							break;
 						case "DOGE":
 							BigDecimal dogeUSDexchangeRate = calculateService.exchangeRate("DOGE","USD");
 							if((walletDto.getAvailableBalance().multiply(dogeUSDexchangeRate)).compareTo(new BigDecimal(minimumFundingOrderPrice)) > 0){
 								orderId = marginFundingService.submitFundingOrder("fDOGE", secret.getSecretKey(), secret.getSecretPassword(),
-										walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
-
+										walletDto.getAvailableBalance(), fundSetting.getInitializeRate(), fundSetting.getPreferLendingPeriod());
 							}
 							break;
 						case "XMR":
 							BigDecimal xmrUSDexchangeRate = calculateService.exchangeRate("XMR","USD");
 							if((walletDto.getAvailableBalance().multiply(xmrUSDexchangeRate)).compareTo(new BigDecimal(minimumFundingOrderPrice)) > 0){
 								orderId = marginFundingService.submitFundingOrder("fXMR", secret.getSecretKey(), secret.getSecretPassword(),
-										walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
+										walletDto.getAvailableBalance(), fundSetting.getInitializeRate(), fundSetting.getPreferLendingPeriod());
 							}
 							break;
 						case "ETH":
 							BigDecimal ethUSDExchangeRate = calculateService.exchangeRate("ETH", "USD");
 							if((walletDto.getAvailableBalance().multiply(ethUSDExchangeRate)).compareTo(new BigDecimal(minimumFundingOrderPrice)) > 0){
 								orderId = marginFundingService.submitFundingOrder("fETH", secret.getSecretKey(), secret.getSecretPassword(),
-										walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
+										walletDto.getAvailableBalance(), fundSetting.getInitializeRate(), fundSetting.getPreferLendingPeriod());
 							}
 							break;
 						case "LTC":
 							BigDecimal ltcUSDExchangeRate = calculateService.exchangeRate("LTC", "USD");
 							if((walletDto.getAvailableBalance().multiply(ltcUSDExchangeRate)).compareTo(new BigDecimal(minimumFundingOrderPrice)) > 0){
 								orderId = marginFundingService.submitFundingOrder("fLTC", secret.getSecretKey(), secret.getSecretPassword(),
-										walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
+										walletDto.getAvailableBalance(), fundSetting.getInitializeRate(), fundSetting.getPreferLendingPeriod());
 							}
 							break;
 						default:
 							orderId = marginFundingService.submitFundingOrder(fundSetting.getCurrency(), secret.getSecretKey(), secret.getSecretPassword(),
-									walletDto.getAvailableBalance(), fundSetting.getRateYearly(), fundSetting.getPreferLendingPeriod());
+									walletDto.getAvailableBalance(), fundSetting.getInitializeRate(), fundSetting.getPreferLendingPeriod());
 							break;
 
 					}
@@ -224,12 +228,10 @@ public class BitfinexScheduler {
 				}
 
 			}
-
 		}
 		catch (Exception ex){
 			ex.printStackTrace();
 		}
-
 
 	}
 
