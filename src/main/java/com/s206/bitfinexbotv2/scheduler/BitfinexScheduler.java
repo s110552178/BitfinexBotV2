@@ -165,11 +165,12 @@ public class BitfinexScheduler {
 			for(int i = 0; i < walletDtoList.size(); i++){
 				BitfinexWalletDto walletDto = walletDtoList.get(i);
 				FundSetting fundSetting = getFundSetting(walletDto.getCurrency());
-				List<AdvancedFundSetting> advancedFundSettingList = advancedFundSettingRepository.findAdvancedFundSettingByFundSettingIdOrderByHighestRateAsc(fundSetting.getId());
+				List<AdvancedFundSetting> advancedFundSettingList = advancedFundSettingRepository.findAdvancedFundSettingByFundSettingIdOrderByHighestRateDesc(fundSetting.getId());
 				if(advancedFundSettingList != null && advancedFundSettingList.size() > 0){
 					// change setting to advanced setting
 					AdvancedFundSetting advancedFundSetting = advancedFundSettingList.get(0);
 					fundSetting.setPreferLendingPeriod(advancedFundSetting.getFundLendingPeriod());
+					fundSetting.setInitializeRate(advancedFundSetting.getHighestRate());
 				}
 
 				if(fundSetting == null || walletDto.getWalletType().equals("exchange")){
@@ -243,21 +244,10 @@ public class BitfinexScheduler {
 		}
 		else{
 			fundSetting = fundSettingOptional.get();
-
 		}
 
 		return fundSetting;
 	}
 
-	/*
-		get better rate if possible
-	 */
-	private List<AdvancedFundSetting> getAdvancedFundSetting(FundSetting fundSetting){
-
-		List<AdvancedFundSetting> advancedFundSettingList = advancedFundSettingRepository.findAdvancedFundSettingByFundSettingIdOrderByHighestRateDesc(fundSetting.getId());
-
-
-		return advancedFundSettingList;
-	}
 
 }

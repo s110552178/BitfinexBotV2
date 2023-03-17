@@ -1,7 +1,9 @@
 package com.s206.bitfinexbotv2.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.s206.bitfinexbotv2.dto.request.ArbitrageRequest;
 import com.s206.bitfinexbotv2.dto.response.ArbitrageResponse;
+import com.s206.bitfinexbotv2.entity.Secret;
 import com.s206.bitfinexbotv2.service.CalculateService;
 import com.s206.bitfinexbotv2.service.MarginFundingService;
 import org.joda.time.DateTime;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -24,14 +27,16 @@ public class VersionController {
 	@Autowired
 	private MarginFundingService service;
 
+	ObjectMapper mapper = new ObjectMapper();
 
 
 	@RequestMapping(value = "version", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> version() throws Exception {
 
-
-		return new ResponseEntity<>("1.0.0", HttpStatus.OK);
+		return new ResponseEntity<>("v1.0", HttpStatus.OK);
 	}
+
+
 
 	@RequestMapping(value = "arbitrage", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ArbitrageResponse> arbitrageCaculate(@RequestBody ArbitrageRequest request){
