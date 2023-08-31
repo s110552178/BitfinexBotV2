@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.s206.bitfinexbotv2.dto.BitfinexActiveOrderDto;
+import com.s206.bitfinexbotv2.dto.BitfinexOrderHistoryDto;
 import com.s206.bitfinexbotv2.util.ConnectionUtil;
 import com.s206.bitfinexbotv2.util.SecurityUtil;
 import com.s206.bitfinexbotv2.util.TelegramNotificationUtil;
@@ -39,13 +40,13 @@ public class MarginFundingService {
 
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	public void getFundingHistoryData(String currency, Long startTime, Long endTime, String apiSecret, String apiKey) throws JsonProcessingException {
+	public List<BitfinexOrderHistoryDto> getFundingHistoryData(String currency, Long startTime, Long endTime, String apiKey, String apiSecret) throws JsonProcessingException {
 
 		// half finish
-
+		List<BitfinexOrderHistoryDto> result = new ArrayList<>();
 		String apiPath = "v2/auth/r/funding/offers/" + currency + "/hist";
 		String url = domain + apiPath;
-		String nonce = Long.toString(System.currentTimeMillis() * 1000);
+		String nonce = Long.toString(System.currentTimeMillis() * 10000);
 
 		ObjectNode objectNode = objectMapper.createObjectNode();
 		if(startTime != null)
@@ -64,13 +65,35 @@ public class MarginFundingService {
 
 		Map<String, String> response = connectionUtil.sendPostRequest(url, headerList, body);
 
+		try{
+			if(response.get("responseCode").equals("200")){
+				String responseMessage = response.get("responseMessage");
+				String[] orderHistoryString = responseMessage.split("\\],\\[");
+				for(int i = 0; i < orderHistoryString.length; i++){
+
+					String str = orderHistoryString[i];
+					str = str.replace("[", "").replace("]", "");
+					str = "[" + str + "]";
+					BitfinexOrderHistoryDto dto = objectMapper.readValue(str, BitfinexOrderHistoryDto.class);
+					result.add(dto);
+				}
+			}
+		}
+		catch(Exception ex){
+
+			telegramNotificationUtil.sendNotification(ex.toString());
+			telegramNotificationUtil.sendNotification("response code: " + response.get("responseCode"));
+			telegramNotificationUtil.sendNotification("response msg: " + response.get("responseMessage"));
+		}
+
+		return result;
 	}
 
 
 	public void cancelFundingOrder(String orderId, String apiKey, String apiSecret) throws JsonProcessingException {
 		String apiPath = "v2/auth/w/funding/offer/cancel";
 		String url = domain + apiPath;
-		String nonce = Long.toString(System.currentTimeMillis() * 1000);
+		String nonce = Long.toString(System.currentTimeMillis() * 10000);
 
 		ObjectNode objectNode = objectMapper.createObjectNode();
 		objectNode.put("id", Long.parseLong(orderId));
@@ -102,7 +125,7 @@ public class MarginFundingService {
 		String orderId = null;
 		String apiPath = "v2/auth/w/funding/offer/submit";
 		String url = domain + apiPath;
-		String nonce = Long.toString(System.currentTimeMillis() * 1000);
+		String nonce = Long.toString(System.currentTimeMillis() * 10000);
 
 
 		ObjectNode objectNode = objectMapper.createObjectNode();
@@ -151,7 +174,7 @@ public class MarginFundingService {
 		String apiPath = "v2/auth/r/funding/offers/" + symbol;
 		String url = domain + apiPath;
 
-		String nonce = Long.toString(System.currentTimeMillis() * 1000);
+		String nonce = Long.toString(System.currentTimeMillis() * 10000);
 		String sigPlainText = "/api/" + apiPath + nonce;
 
 		String sigHashText = securityUtil.HmacSHA384(sigPlainText, apiSecret);

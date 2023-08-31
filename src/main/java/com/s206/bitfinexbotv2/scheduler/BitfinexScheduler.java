@@ -22,8 +22,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class BitfinexScheduler {
@@ -56,17 +58,17 @@ public class BitfinexScheduler {
 	private Long minimumFundingOrderPrice;
 
 
-	@Scheduled(fixedDelay = 3600000)
-	public void removeExpiredOrder(){
-		Iterable<WaitingOrder> waitingOrderIterable = waitingOrderRepository.findAll();
-
-		waitingOrderIterable.forEach( waitingOrder -> {
-			if(System.currentTimeMillis() - waitingOrder.getOrder_create_time() > waitingOrderExpiredTime){
-				waitingOrderRepository.delete(waitingOrder);
-			}
-		});
-
-	}
+//	@Scheduled(fixedDelay = 3600000)
+//	public void removeExpiredOrder(){
+//		Iterable<WaitingOrder> waitingOrderIterable = waitingOrderRepository.findAll();
+//
+//		waitingOrderIterable.forEach( waitingOrder -> {
+//			if(System.currentTimeMillis() - waitingOrder.getOrder_create_time() > waitingOrderExpiredTime){
+//				waitingOrderRepository.delete(waitingOrder);
+//			}
+//		});
+//
+//	}
 
 	@Scheduled(cron = "20 * * * * *")
 	public void updateWaitingOrder() {
@@ -80,7 +82,7 @@ public class BitfinexScheduler {
 
 			list.forEach( waitingOrder -> {
 				try {
-					String orderId = waitingOrder.getOrderId();
+					String orderId = waitingOrder.getSubOrderId();
 					for (int i = 0; i < activeOrderDtoList.size(); i++) {
 						BitfinexActiveOrderDto bitfinexOrder = activeOrderDtoList.get(i);
 						String bitfinexActiveOrderId = bitfinexOrder.getId();
@@ -131,8 +133,8 @@ public class BitfinexScheduler {
 							//
 							String newOrderId = marginFundingService.submitFundingOrder(bitfinexOrder.getSymbol(), secret.getSecretKey(), secret.getSecretPassword(),
 									bitfinexOrder.getAmount(), newRate, fundSetting.getPreferLendingPeriod());
-							waitingOrder.setOrderId(newOrderId);
-							waitingOrder.setOrder_create_time(System.currentTimeMillis());
+							waitingOrder.setSubOrderId(newOrderId);
+							waitingOrder.setOrderUpdateTime(new Timestamp(System.currentTimeMillis()));
 							waitingOrderRepository.save(waitingOrder);
 						}
 					}
@@ -222,8 +224,11 @@ public class BitfinexScheduler {
 					}
 					if(orderId != null){
 						WaitingOrder waitingOrder = new WaitingOrder();
-						waitingOrder.setOrderId(orderId);
-						waitingOrder.setOrder_create_time(System.currentTimeMillis());
+						String newMainOrderId = generateUUID();
+						waitingOrder.setMainOrderId(newMainOrderId);
+						waitingOrder.setSubOrderId(orderId);
+						waitingOrder.setOrderCreateTime(new Timestamp(System.currentTimeMillis()));
+						waitingOrder.setOrderUpdateTime(new Timestamp(System.currentTimeMillis()));
 						waitingOrderRepository.save(waitingOrder);
 					}
 				}
@@ -249,5 +254,10 @@ public class BitfinexScheduler {
 		return fundSetting;
 	}
 
+	public String generateUUID(){
+		UUID uuid = UUID.randomUUID();
+		String uuidString = uuid.toString();
+		return uuidString;
+	}
 
 }

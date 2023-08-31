@@ -1,48 +1,48 @@
 package com.s206.bitfinexbotv2.entity;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @Entity
-@Table(name = "waiting_order")
-public class WaitingOrder {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
-	private long id;
+@Table(name = "active_order")
+public class ActiveOrder {
 
-	@Column(name = "main_order_id")
-	private String mainOrderId;
-	@Column(name = "sub_order_id")
-	private String subOrderId;
+	@Id
+	@Column(name = "id")
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+	@Column(name = "order_id")
+	private String orderId;
+	@Column(name = "order_rate")
+	private BigDecimal orderRate;
 	@Column(name = "order_create_time")
 	private Timestamp orderCreateTime;
-
 	@Column(name = "order_update_time")
 	private Timestamp orderUpdateTime;
 
-	public long getId() {
+	public Long getId() {
 		return id;
 	}
 
-	public void setId(long id) {
+	public void setId(Long id) {
 		this.id = id;
 	}
 
-	public String getMainOrderId() {
-		return mainOrderId;
+	public String getOrderId() {
+		return orderId;
 	}
 
-	public void setMainOrderId(String mainOrderId) {
-		this.mainOrderId = mainOrderId;
+	public void setOrderId(String orderId) {
+		this.orderId = orderId;
 	}
 
-	public String getSubOrderId() {
-		return subOrderId;
+	public BigDecimal getOrderRate() {
+		return orderRate;
 	}
 
-	public void setSubOrderId(String subOrderId) {
-		this.subOrderId = subOrderId;
+	public void setOrderRate(BigDecimal orderRate) {
+		this.orderRate = orderRate;
 	}
 
 	public Timestamp getOrderCreateTime() {

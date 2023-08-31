@@ -23,7 +23,7 @@ public class BitfinexCoreService {
 
 		String url = domain + apiPath;
 
-		String nonce = Long.toString(System.currentTimeMillis() * 1000);
+		String nonce = Long.toString(System.currentTimeMillis() * 10000);
 		String sigPlainText = "/api/" + apiPath + nonce;
 
 		String sigHashText = securityUtil.HmacSHA384(sigPlainText, apiSecret);
