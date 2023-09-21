@@ -3,10 +3,7 @@ package com.s206.bitfinexbotv2.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.s206.bitfinexbotv2.dto.request.ArbitrageRequest;
 import com.s206.bitfinexbotv2.dto.response.ArbitrageResponse;
-import com.s206.bitfinexbotv2.entity.Secret;
-import com.s206.bitfinexbotv2.service.CalculateService;
 import com.s206.bitfinexbotv2.service.MarginFundingService;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,9 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Currency;
-import java.util.List;
 
 @RestController
 public class VersionController {
@@ -33,9 +27,6 @@ public class VersionController {
 
 	@RequestMapping(value = "version", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> version() throws Exception {
-
-		service.getFundingHistoryData("fUSD", 1690819200000L, System.currentTimeMillis(),
-				"X2ssX4bWGCnLJNM2e7o6TyA5xUfoN6dJRGPKxnDjJ2B", "FNNfxTExYc5fJ8mOuC8hN9WbR7ezfeW83p0HZW8GJ9m");
 
 		return new ResponseEntity<>("v1.0", HttpStatus.OK);
 	}
@@ -75,7 +66,6 @@ public class VersionController {
 			}
 
 		}
-
 
 		/*
 		 win chance = 1/ base1Odds + 1/ base2Odds

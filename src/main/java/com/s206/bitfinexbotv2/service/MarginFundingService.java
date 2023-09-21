@@ -75,7 +75,8 @@ public class MarginFundingService {
 					str = str.replace("[", "").replace("]", "");
 					str = "[" + str + "]";
 					BitfinexOrderHistoryDto dto = objectMapper.readValue(str, BitfinexOrderHistoryDto.class);
-					result.add(dto);
+					if(dto.getId() != null)
+						result.add(dto);
 				}
 			}
 		}

@@ -10,36 +10,36 @@ public class Config {
 	@Id
 	@Column(name = "id")
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private long id;
-	@Column(name = "key")
-	private String key;
-	@Column(name = "value")
-	private String value;
+	private Long id;
+	@Column(name = "config_name")
+	private String configName;
+	@Column(name = "config_value")
+	private String configValue;
 	@Column(name = "update_time")
 	private Timestamp updateTime;
 
-	public long getId() {
+	public Long getId() {
 		return id;
 	}
 
-	public void setId(long id) {
+	public void setId(Long id) {
 		this.id = id;
 	}
 
-	public String getKey() {
-		return key;
+	public String getConfigName() {
+		return configName;
 	}
 
-	public void setKey(String key) {
-		this.key = key;
+	public void setConfigName(String configName) {
+		this.configName = configName;
 	}
 
-	public String getValue() {
-		return value;
+	public String getConfigValue() {
+		return configValue;
 	}
 
-	public void setValue(String value) {
-		this.value = value;
+	public void setConfigValue(String configValue) {
+		this.configValue = configValue;
 	}
 
 	public Timestamp getUpdateTime() {

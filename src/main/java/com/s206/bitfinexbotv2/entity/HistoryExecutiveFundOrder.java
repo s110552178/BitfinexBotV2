@@ -5,8 +5,8 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @Entity
-@Table(name = "active_order")
-public class ActiveOrder {
+@Table(name = "history_executive_fund_order")
+public class HistoryExecutiveFundOrder {
 
 	@Id
 	@Column(name = "id")
@@ -18,8 +18,8 @@ public class ActiveOrder {
 	private BigDecimal orderRate;
 	@Column(name = "order_create_time")
 	private Timestamp orderCreateTime;
-	@Column(name = "order_update_time")
-	private Timestamp orderUpdateTime;
+	@Column(name = "order_executive_time")
+	private Timestamp orderExecutiveTime;
 
 	public Long getId() {
 		return id;
@@ -53,11 +53,11 @@ public class ActiveOrder {
 		this.orderCreateTime = orderCreateTime;
 	}
 
-	public Timestamp getOrderUpdateTime() {
-		return orderUpdateTime;
+	public Timestamp getOrderExecutiveTime() {
+		return orderExecutiveTime;
 	}
 
-	public void setOrderUpdateTime(Timestamp orderUpdateTime) {
-		this.orderUpdateTime = orderUpdateTime;
+	public void setOrderExecutiveTime(Timestamp orderExecutiveTime) {
+		this.orderExecutiveTime = orderExecutiveTime;
 	}
 }
